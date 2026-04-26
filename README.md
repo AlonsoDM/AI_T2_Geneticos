@@ -130,6 +130,7 @@ Entonces la recompensa acumulada de un episodio = número de pasos sobrevividos.
     fitness = promedio de pasos sobrevividos en N episodios
 
 Decisiones de diseño importantes:
+    
     1. Promediar varios episodios:
        El estado inicial de CartPole es ALEATORIO (uniforme en [-0.05, 0.05]).
        Si evaluamos con un solo episodio, un individuo mediocre puede tener
