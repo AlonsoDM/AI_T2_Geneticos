@@ -119,7 +119,7 @@ fitness : float
 
 
 
-### fitness.py
+### `fitness.py`
 
 Define y evalúa la función de fitness para el problema CartPole-v1.
 
