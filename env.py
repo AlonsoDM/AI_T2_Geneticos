@@ -1,9 +1,7 @@
 """
-env.py – Thin CartPole-v1 environment wrapper.
-
-Provides a context-manager-friendly class so the rest of the code
-can obtain/release Gymnasium environments without scattering
-try/finally blocks everywhere.
+Proporciona una clase compatible con el gestor de contexto para que el resto del código 
+pueda obtener/liberar entornos de Gymnasium sin dispersar bloques 
+try/finally por todas partes.
 """
 
 import gymnasium as gym
@@ -11,15 +9,14 @@ from individual import Individual
 
 
 class CartPoleEnv:
-    """Lightweight wrapper around a single CartPole-v1 Gymnasium environment."""
 
     ENV_ID = "CartPole-v1"
-    MAX_STEPS = 500        # hard limit imposed by the environment
+    MAX_STEPS = 500        # límite estricto impuesto por el entorno
 
     def __init__(self, render_mode: str = None):
         self._env = gym.make(self.ENV_ID, render_mode=render_mode)
 
-    # ── context manager ───────────────────────────────────────────────────────
+    # context manager 
 
     def __enter__(self):
         return self
@@ -27,7 +24,7 @@ class CartPoleEnv:
     def __exit__(self, *_):
         self.close()
 
-    # ── public API ────────────────────────────────────────────────────────────
+    # Métodos públicos 
 
     def close(self):
         self._env.close()
@@ -37,7 +34,7 @@ class CartPoleEnv:
         return self._env
 
     def run_episode(self, individual: Individual, seed: int = None) -> float:
-        """Run one episode and return the total reward (= steps survived)."""
+        """Ejecuta un episodio y devuelve la recompensa total (= pasos superados)."""
         obs, _ = self._env.reset(seed=seed)
         total_reward = 0.0
         done = False
@@ -50,7 +47,7 @@ class CartPoleEnv:
 
     def evaluate(self, individual: Individual, n_episodes: int = 5,
                  seed: int = None) -> float:
-        """Return average reward over n_episodes independent episodes."""
+        """Devuelve la recompensa promedio en n_episodios episodios independientes."""
         rewards = [
             self.run_episode(individual, seed=None if seed is None else seed + i)
             for i in range(n_episodes)

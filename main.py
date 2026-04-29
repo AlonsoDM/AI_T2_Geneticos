@@ -12,24 +12,6 @@ from operators import (
 
 
 class GeneticAlgorithm:
-    """Full generational GA for CartPole-v1.
-
-    Parameters
-    ----------
-    population_size  : number of individuals per generation (>= 30)
-    hidden_size      : neurons in the single hidden layer of the policy network
-    n_generations    : how many generations to run (>= 50)
-    mutation_rate    : probability that each gene is perturbed
-    mutation_sigma   : standard deviation of Gaussian noise applied to mutated genes
-    crossover_rate   : probability that two parents recombine (else copied)
-    crossover_type   : "single_point" | "uniform" | "arithmetic"
-    selection_type   : "tournament" | "roulette"
-    tournament_k     : pool size for tournament selection
-    elitism          : how many top individuals survive unchanged each generation
-    n_episodes       : episodes averaged to compute each individual's fitness
-    seed             : int for reproducibility; None for non-deterministic runs
-    verbose          : print progress each generation
-    """
 
     def __init__(
         self,
@@ -64,7 +46,7 @@ class GeneticAlgorithm:
         self.history: dict = {"mean": [], "max": [], "min": [], "std": []}
         self.best_individual: Individual | None = None
 
-    # ── helpers ──────────────────────────────────────────────────────────────
+    """ helpers """
 
     def _select(self, population: list) -> Individual:
         if self.selection_fn is tournament_selection:
@@ -77,10 +59,10 @@ class GeneticAlgorithm:
             self.history[key].append(stats[key])
         return stats
 
-    # ── main loop ─────────────────────────────────────────────────────────────
+    """ main loop """
 
     def run(self) -> dict:
-        """Evolve the population and return the fitness history."""
+        """Evoluciona la población y devuelve el historial de aptitud física."""
         if self.seed is not None:
             np.random.seed(self.seed)
 
@@ -147,18 +129,15 @@ class GeneticAlgorithm:
         return self.history
 
 
-# ── convenience wrapper ───────────────────────────────────────────────────────
-
 def run_experiment(config: dict, verbose: bool = True) -> dict:
-    """Instantiate GeneticAlgorithm from a config dict and run it.
-
-    Returns a dict with keys:
-        history        – per-generation fitness stats
-        best_fitness   – scalar fitness of the all-time best individual
-        best_individual – the Individual object
-        config         – the original config dict
     """
-    # Strip display-only keys before passing to GA constructor
+        Devuelve un diccionario con las siguientes claves:
+            history: estadísticas de aptitud por generación
+            best_fitness: aptitud escalar del mejor individuo de todos los tiempos
+            best_individual: el objeto Individual
+            config: el diccionario de configuración original
+    """
+
     ga_config = {k: v for k, v in config.items() if k not in ("name", "short_name")}
     ga = GeneticAlgorithm(**ga_config, verbose=verbose)
 
@@ -176,7 +155,8 @@ def run_experiment(config: dict, verbose: bool = True) -> dict:
     }
 
 
-# ── quick smoke-test ──────────────────────────────────────────────────────────
+
+
 
 if __name__ == "__main__":
     result = run_experiment(

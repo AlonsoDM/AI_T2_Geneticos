@@ -2,7 +2,7 @@ import numpy as np
 from individual import Individual
 
 
-# ── Selection ──────────────────────────────────────────────────────────────────
+# Selección
 
 def tournament_selection(population: list, k: int = 3) -> Individual:
     """Return the fittest individual from k randomly sampled candidates."""
@@ -19,7 +19,7 @@ def roulette_selection(population: list) -> Individual:
     return population[idx]
 
 
-# ── Crossover ──────────────────────────────────────────────────────────────────
+# Crossover 
 
 def single_point_crossover(parent1: Individual, parent2: Individual) -> tuple:
     """Cut both chromosomes at one random point and swap tails."""
@@ -55,7 +55,7 @@ def arithmetic_crossover(parent1: Individual, parent2: Individual) -> tuple:
     )
 
 
-# ── Mutation ───────────────────────────────────────────────────────────────────
+# Mutación
 
 def gaussian_mutation(
     individual: Individual,
@@ -69,7 +69,7 @@ def gaussian_mutation(
     return Individual(hidden_size=individual.hidden_size, genes=genes)
 
 
-# ── Registry (used by GeneticAlgorithm) ───────────────────────────────────────
+# Registro (utilizado por GeneticAlgorithm) 
 
 CROSSOVER_FNS = {
     "single_point": single_point_crossover,

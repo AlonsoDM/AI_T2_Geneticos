@@ -1,31 +1,22 @@
 """
-experiments.py – Run 3 GA configurations on CartPole-v1 and produce plots.
-
-Usage:
-    python experiments.py
-
-Output files (created in the working directory):
-    results_config1.npy, results_config2.npy, results_config3.npy
-    plot_individual_configs.png
-    plot_comparison.png
+Ejecuta 3 configuraciones de GA en CartPole-v1 y genera gráficos.
 """
 
 import os
 import time
 import numpy as np
 import matplotlib
-matplotlib.use("Agg")          # headless rendering (no display required)
+matplotlib.use("Agg")        
 import matplotlib.pyplot as plt
 
 from main import run_experiment
 
-# ── Experiment configurations ─────────────────────────────────────────────────
+
 
 CONFIGS = [
     {
-        # Small population, low mutation rate, single-point crossover.
-        # Conservative exploration: fast convergence but risk of premature
-        # convergence to local optima.
+        # Población pequeña, baja tasa de mutación, cruce de un solo punto.
+        # Exploración conservadora: convergencia rápida, pero riesgo de convergencia prematura a óptimos locales.
         "name":            "Config 1 – Conservative (Pop=30, mut=0.05, single-point)",
         "short_name":      "Config 1\n(Pop=30, mut=0.05,\nsingle-point)",
         "population_size": 30,
@@ -42,9 +33,8 @@ CONFIGS = [
         "seed":            42,
     },
     {
-        # Medium population, moderate mutation, uniform crossover.
-        # Balanced exploration/exploitation; uniform crossover mixes genes
-        # from both parents more thoroughly than single-point.
+        # Población media, mutación moderada, entrecruzamiento uniforme.
+        # Exploración/explotación equilibrada; el entrecruzamiento uniforme mezcla genes de ambos progenitores de forma más completa que el entrecruzamiento de un solo punto.
         "name":            "Config 2 – Balanced (Pop=50, mut=0.15, uniform)",
         "short_name":      "Config 2\n(Pop=50, mut=0.15,\nuniform)",
         "population_size": 50,
@@ -61,10 +51,8 @@ CONFIGS = [
         "seed":            42,
     },
     {
-        # Large population, high mutation, arithmetic (blend) crossover.
-        # Aggressive diversity: slower to converge but less likely to get
-        # stuck; arithmetic crossover naturally stays within the convex hull
-        # of parent genes, reducing wild jumps.
+# Población grande, alta mutación, entrecruzamiento aritmético (de mezcla).
+# Diversidad agresiva: converge más lentamente, pero es menos probable que se quede estancado; el entrecruzamiento aritmético se mantiene naturalmente dentro de la envoltura convexa de los genes parentales, lo que reduce los saltos inesperados.
         "name":            "Config 3 – Aggressive (Pop=60, mut=0.30, arithmetic)",
         "short_name":      "Config 3\n(Pop=60, mut=0.30,\narithmetic)",
         "population_size": 60,
@@ -85,10 +73,11 @@ CONFIGS = [
 COLORS = ["#2196F3", "#4CAF50", "#FF5722"]   # blue, green, deep-orange
 
 
-# ── Plotting helpers ──────────────────────────────────────────────────────────
+
+""" Graficos """
 
 def _plot_single(ax, history: dict, title: str, color: str) -> None:
-    """Draw mean ± std band and max fitness curve on ax."""
+    """Dibuja la media ± la desviación estándar y la curva de aptitud máxima en el eje."""
     gens = np.arange(1, len(history["mean"]) + 1)
     mean = np.array(history["mean"])
     maxi = np.array(history["max"])
@@ -110,7 +99,7 @@ def _plot_single(ax, history: dict, title: str, color: str) -> None:
 
 
 def plot_individual_configs(results: list, out_path: str = "plot_individual_configs.png") -> None:
-    """One subplot per configuration showing mean/max fitness over generations."""
+    """Un subgráfico por configuración que muestra la aptitud media/máxima a lo largo de las generaciones."""
     fig, axes = plt.subplots(1, 3, figsize=(16, 5), sharey=True)
     fig.suptitle("Genetic Algorithm – CartPole-v1\nFitness per Generation by Configuration",
                  fontsize=13, fontweight="bold", y=1.02)
@@ -125,7 +114,7 @@ def plot_individual_configs(results: list, out_path: str = "plot_individual_conf
 
 
 def plot_comparison(results: list, out_path: str = "plot_comparison.png") -> None:
-    """Overlay all three configurations' max and mean fitness for direct comparison."""
+    """Superponga el valor máximo y el valor medio de aptitud de las tres configuraciones para una comparación directa."""
     gens = np.arange(1, len(results[0]["history"]["mean"]) + 1)
 
     fig, (ax_max, ax_mean) = plt.subplots(1, 2, figsize=(13, 5))
@@ -155,7 +144,7 @@ def plot_comparison(results: list, out_path: str = "plot_comparison.png") -> Non
 
 
 def plot_bar_summary(results: list, out_path: str = "plot_bar_summary.png") -> None:
-    """Bar chart comparing the best fitness achieved by each configuration."""
+    """Gráfico de barras que compara el mejor estado físico alcanzado por cada configuración."""
     labels = [f"Config {i+1}" for i in range(len(results))]
     best   = [r["best_fitness"] for r in results]
     final_mean = [r["history"]["mean"][-1] for r in results]
@@ -188,7 +177,9 @@ def plot_bar_summary(results: list, out_path: str = "plot_bar_summary.png") -> N
     print(f"  Saved: {out_path}")
 
 
-# ── Main entry point ──────────────────────────────────────────────────────────
+
+
+
 
 def main():
     print("=" * 60)
@@ -216,7 +207,6 @@ def main():
 
     print(f"\n  Total time: {(time.time() - total_start):.0f}s")
 
-    # ── Plots ─────────────────────────────────────────────────────────────────
     print("\nGenerating plots …")
     plot_individual_configs(results)
     plot_comparison(results)
