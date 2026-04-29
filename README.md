@@ -1,191 +1,170 @@
-# Tarea 2: Algorítmos Genéticos
+# Tarea 2: Algoritmos Genéticos – CartPole-v1
 
-## Estructura de la Tarea
+Control de un carro con palo balanceante (Gymnasium / Farama AI) mediante un algoritmo genético que evoluciona los pesos de una red neuronal pequeña.
+
+---
+
+## Estructura del proyecto
 
 ```
-  AI_T2_Geneticos/
-  │
-  ├── environment.py     # wrapper de CartPole, evalúa un individuo
-  ├── individual.py      # cromosoma (red neuronal pequeña) + método act()
-  ├── population.py      # inicialización y manejo de la población
-  ├── operators.py       # selección, cruce, mutación
-  ├── fitness.py         # función de fitness
-  ├── ga.py              # bucle principal del AG
-  └── experiments.py     # corre las 3 configuraciones y grafica
+AI_T2_Geneticos/
+├── individual.py      # Cromosoma: red neuronal feedforward + método act()
+├── fitness.py         # Evaluación de fitness sobre el entorno CartPole-v1
+├── population.py      # Creación y estadísticas de la población
+├── operators.py       # Selección, cruce y mutación
+├── main.py            # Clase GeneticAlgorithm + función run_experiment()
+├── experiments.py     # 3 configuraciones experimentales + gráficas
+├── env.py             # Wrapper opcional de CartPole-v1
+└── README.md          # Este archivo
 ```
 
-## Entorno Virtual e instalación de gymnasium
+---
+
+## Instalación y ejecución
+
+### 1. Crear y activar el entorno virtual
 
 ```bash
-  # 1. Crear el entorno virtual (solo una vez)
-  python3 -m venv venv
-  
-  # 2. Activarlo
-  # En macOS / Linux:
-  source venv/bin/activate
-  
-  # 3. Instalar las dependencias (con el entorno activo)
-  pip install gymnasium numpy matplotlib
-  
-  # 4. Verificar que estás dentro del entorno
-  which python  
-  
-  # 5. Cuando termines, desactivar
-  deactivate
+python3 -m venv venv
+source venv/bin/activate          # macOS / Linux
+# venv\Scripts\activate           # Windows
 ```
 
-## Diseño por módulo
+### 2. Instalar dependencias
 
-### `indiviual.py`
-
-Define el cromosoma y la política de control para CartPole-v1.
-
-Arquitectura de la red neuronal:
-- Entrada (4) → Capa oculta (hidden_size) → Salida (2)
-
-- Las 4 entradas son las observaciones de CartPole:
-  `[posición_carro, velocidad_carro, ángulo_palo, velocidad_angular_palo]`
-
-- Las 2 salidas representan la preferencia por cada acción:
-  ```
-    0 = empujar izquierda
-    1 = empujar derecha
-  ```
-
-- Se toma la acción con mayor valor (argmax), sin softmax, porque solo se necesita la decisión, no una probabilidad.
-
-- Estructura del cromosoma (vector plano de reales):
-  ```
-    Total de pesos = (4 × hidden_size) + hidden_size + (hidden_size × 2) + 2 = hidden_size × (4 + 1 + 2 + 1)  [con biases]
-
-    Con hidden_size=4:
-        W1: 4×4 = 16 pesos
-        b1: 4        biases
-        W2: 4×2 = 8  pesos
-        b2: 2        biases
-        ─────────────────
-        Total: 30 valores reales
-  ```
-
-Un individuo representa una política completa de control para CartPole.
-
-Su "genoma" es un vector numpy de números reales que codifica todos los
-pesos y biases de una red neuronal pequeña (feedforward, 1 capa oculta).
-
-#### Atributos
-
-hidden_size : int
-- Número de neuronas en la capa oculta.
-- Más neuronas = más expresividad, pero también más genes que evolucionar.
-
-genes : np.ndarray
-- Vector 1D con todos los pesos/biases de la red. Es el cromosoma.
-- Si se pasa, usa esos genes directamente (útil en cruce/mutación).
-- Si no se pasa, inicializa con pesos aleatorios pequeños.
-
-fitness : float
-  Aptitud evaluada. None hasta que se llama a evaluate().
-    
-#### Métodos
-- `_count_genes(hidden_size)`: Calcula el total de pesos+biases para una arquitectura dada.
-- `_unpack_weights()`: Extrae los pesos del vector de genes y los reordena en matrices.
+```bash
+pip install gymnasium numpy matplotlib
 ```
-  Retorna:
-  
-  W1 : np.ndarray, shape (INPUT_SIZE, hidden_size)
-  b1 : np.ndarray, shape (hidden_size,)
-  W2 : np.ndarray, shape (hidden_size, OUTPUT_SIZE)
-  b2 : np.ndarray, shape (OUTPUT_SIZE,)
+
+### 3. Ejecutar los experimentos completos (3 configuraciones, 50 generaciones c/u)
+
+```bash
+python experiments.py
 ```
-- `act(observation)`: Dado el estado actual del entorno, decide qué acción tomar. El proceso:
-  1. Propagación hacia adelante (forward pass) de la red.
-  2. Capa oculta: ReLU(observation @ W1 + b1)
-      ReLU introduce no-linealidad: sin ella, la red sería
-      equivalente a una simple regresión lineal. Es decir, elimina valores negativos e introduce no linealidad.
-  3. Capa salida: activación lineal (los logits se comparan
-      directamente).
-  4. Se elige la acción con el mayor logit (números sin normalizar).
+
+Esto genera tres archivos PNG en el directorio de trabajo:
+
+| Archivo | Contenido |
+|---------|-----------|
+| `plot_individual_configs.png` | Media ± std y máximo por generación, un subplot por configuración |
+| `plot_comparison.png` | Comparación directa de las 3 configuraciones (max y media) |
+| `plot_bar_summary.png` | Mejor fitness y media final por configuración |
+
+### 4. Ejecutar una sola configuración personalizada
+
+```python
+from main import run_experiment
+
+result = run_experiment({
+    "population_size": 30,
+    "n_generations":   50,
+    "mutation_rate":   0.10,
+    "crossover_type":  "single_point",   # "single_point" | "uniform" | "arithmetic"
+    "selection_type":  "tournament",     # "tournament" | "roulette"
+    "seed":            42,
+})
+print(f"Mejor fitness: {result['best_fitness']:.1f}")
 ```
-  Parámetros:
-  observation : np.ndarray, shape (4,)
-      Vector [pos_carro, vel_carro, ángulo_palo, vel_angular_palo]
-  
-  Retorna:
-  int : 0 (izquierda) o 1 (derecha)
-```  
 
-- `clone()`: Crea una copia independiente de este individuo (sin fitness).
-- `n_genes()`: Retorna el número total de genes (pesos) del cromosoma.
+### 5. Pruebas rápidas de módulos individuales
 
+```bash
+python individual.py   # verifica la red neuronal y act()
+python fitness.py      # evalúa individuos aleatorios en CartPole
+python main.py         # smoke-test: 5 generaciones con 30 individuos
+```
 
+---
 
-### `fitness.py`
+## Diseño del algoritmo genético
 
-Define y evalúa la función de fitness para el problema CartPole-v1.
+### Representación del cromosoma
 
-**¿Por qué esta función de fitness?**
-CartPole ya entrega +1 de recompensa por cada paso que el palo no cae.
-Entonces la recompensa acumulada de un episodio = número de pasos sobrevividos.
+Cada individuo es una red neuronal feedforward con una capa oculta:
 
-    fitness = promedio de pasos sobrevividos en N episodios
+```
+Entrada (4) ──→ ReLU ──→ Oculta (4) ──→ Lineal ──→ Salida (2)
+```
 
-Decisiones de diseño importantes:
-    
-    1. Promediar varios episodios:
-       El estado inicial de CartPole es ALEATORIO (uniforme en [-0.05, 0.05]).
-       Si evaluamos con un solo episodio, un individuo mediocre puede tener
-       "suerte" con un estado fácil y parecer mejor de lo que es.
-       Con N=5 episodios se reduce mucho esa varianza sin costar demasiado tiempo.
+Las 4 entradas corresponden al estado de CartPole:
+`[posición_carro, velocidad_carro, ángulo_palo, velocidad_angular_palo]`
 
-    2. NO penalizar el ángulo o la posición manualmente:
-       Ya está implícito: si el palo cae, el episodio termina y el individuo
-       recibe menos pasos. Agregar penalizaciones extras complica la función
-       sin necesidad.
+Las 2 salidas representan la preferencia por cada acción (0 = izquierda, 1 = derecha). Se toma `argmax` de la salida, sin softmax.
 
-    3. Normalización opcional [0, 1]:
-       Dividir entre 500 (el máximo posible en v1) facilita comparar
-       configuraciones con distintos max_steps o versiones del entorno.
+El cromosoma es un vector numpy de 30 reales: W1 (16) + b1 (4) + W2 (8) + b2 (2).
 
-#### Funciones
+### Función de fitness
 
-- `evaluate_fitness(individual, env, n_episodes, normalize, seed)`: 
-    Evalúa qué tan buena es la política de un individuo en CartPole-v1.
+```
+fitness(individuo) = promedio de pasos sobrevividos en N episodios
+```
 
-    El individuo controla el carro durante N episodios independientes.
-    El fitness es el número promedio de pasos que logra sobrevivir.
+CartPole entrega +1 de recompensa por cada paso que el palo se mantiene vertical. El máximo teórico es 500 (límite de la versión v1). Se promedian 5 episodios con estados iniciales aleatorios distintos para reducir la varianza de la estimación.
 
-    Parámetros:
-    - individual : Individual
-      El cromosoma a evaluar. Se usa individual.act() para tomar decisiones.
-    - env : gym.Env, opcional
-      Entorno ya creado. Si es None, se crea uno internamente y se cierra
-      al terminar. Pasar el entorno desde afuera es más eficiente cuando
-      se evalúa una población completa.
-    - n_episodes : int
-      Número de episodios a promediar. Más episodios = fitness más estable, pero más lento con 5 es suficiente.
-    - normalize : bool
-      Si True, divide el resultado entre DEFAULT_MAX_STEPS (500) para
-      obtener un valor en [0, 1]. Útil para comparar experimentos.
-    - seed : int, opcional
-      Semilla para reproducibilidad. Para comparar configuraciones.
+### Operadores
 
-    Retorna:
-    - float
-      Fitness del individuo. Sin normalizar: valores en [1, 500].
-      Normalizado: valores en [0.002, 1.0].
+| Operador | Opciones implementadas |
+|----------|----------------------|
+| Selección | Torneo (k configurable), Ruleta proporcional al fitness |
+| Cruce | Un punto, Uniforme (p=0.5), Aritmético (α aleatorio) |
+| Mutación | Gaussiana: cada gen perturba con probabilidad `mutation_rate` sumando N(0, σ) |
+| Elitismo | Los top-k individuos pasan intactos a la siguiente generación |
 
-- `evaluate_population(population: list, n_episodes: int = DEFAULT_N_EPISODES, normalize: bool = False, seed: int = None)`: Evalúa todos los individuos de una población y retorna sus fitness. Reutiliza un único entorno para toda la población, lo cual es más eficiente que crear/destruir el entorno por cada individuo.
+---
 
-    Parámetros:
-    - population : Lista de individuos a evaluar.
-    - n_episodes : Episodios por individuo.
-    - normalize : Si True, normaliza entre 0 y 1.
-    - seed : Semilla base. Cada individuo usa seed + su_índice para diversidad, pero reproducibilidad.
+## Configuraciones experimentales
 
-    Retorna:
-    - list: Lista de fitness en el mismo orden que population. Los valores también quedan guardados en individual.fitness.
+| | Config 1 | Config 2 | Config 3 |
+|---|---|---|---|
+| **Estrategia** | Conservadora | Balanceada | Agresiva |
+| `population_size` | 30 | 50 | 60 |
+| `n_generations` | 50 | 50 | 50 |
+| `mutation_rate` | 0.05 | 0.15 | 0.30 |
+| `crossover_type` | `single_point` | `uniform` | `arithmetic` |
+| `selection_type` | `tournament` | `tournament` | `tournament` |
+| `tournament_k` | 3 | 5 | 5 |
+| `elitism` | 2 | 2 | 3 |
+| `crossover_rate` | 0.80 | 0.85 | 0.90 |
 
-- `population_stats(fitness_values)`: Calcula estadísticas básicas del fitness de una generación. Para graficar la evolución del AG.
+---
 
-    Retorna:
-    - dict con claves: mean, max, min, std
+## Análisis crítico
+
+### Contexto y motivación
+
+El problema CartPole-v1 es un entorno de control clásico en el que un agente debe aplicar fuerzas laterales a un carro para mantener un palo vertical en equilibrio. El espacio de observación es continuo (4D) y el espacio de acción es discreto binario. Aunque existen soluciones de gradiente (PPO, DQN) altamente optimizadas para este problema, los algoritmos genéticos ofrecen una perspectiva complementaria: evolucionan directamente los parámetros de la política sin calcular gradientes, lo que los hace robustos frente a funciones de fitness no diferenciables y espacios de búsqueda multimodales.
+
+### Diseño de la representación
+
+La elección de codificar los pesos de una red neuronal como cromosoma real (en lugar de binario o simbólico) es natural para este dominio: los pesos son continuos y su espacio de búsqueda es el de los números reales. Con `hidden_size=4` y la arquitectura 4→4→2, el cromosoma tiene solo 30 genes, un espacio de búsqueda suficientemente compacto para ser explorado por un AG pequeño en pocas generaciones. Arquitecturas más grandes (más neuronas ocultas) aumentarían la capacidad de la red pero también la dimensionalidad del espacio de búsqueda, requiriendo poblaciones más grandes y más generaciones.
+
+### Comparación de configuraciones
+
+**Config 1 (Conservadora, Pop=30, mut=0.05, cruce en un punto):** La baja tasa de mutación limita la perturbación genética por generación, lo que permite conservar bloques de genes ya buenos. El cruce en un punto es el más sencillo: intercambia segmentos contiguos del cromosoma, preservando cierta coherencia local entre genes. Con solo 30 individuos, la presión de selección es alta y la convergencia tiende a ser rápida, aunque con mayor riesgo de converger a soluciones subóptimas si el mejor individuo inicial domina la población prematuramente.
+
+**Config 2 (Balanceada, Pop=50, mut=0.15, cruce uniforme):** El cruce uniforme mezcla genes de forma independiente por posición, generando mayor diversidad genética entre los hijos que el cruce en un punto. La tasa de mutación moderada (0.15) permite explorar el espacio sin destruir soluciones parcialmente buenas. Con 50 individuos, la población es suficientemente grande para mantener diversidad durante más generaciones. Esta configuración representa el punto de equilibrio entre exploración (descubrir nuevas regiones del espacio de búsqueda) y explotación (refinar soluciones existentes).
+
+**Config 3 (Agresiva, Pop=60, mut=0.30, cruce aritmético):** El cruce aritmético produce hijos que son combinaciones lineales de los padres, lo que genera una exploración más suave dentro del convex hull del espacio genético: no introduce valores extremos, sino interpolaciones. Sin embargo, la alta tasa de mutación (0.30) introduce mucho ruido, lo que puede ser beneficioso para escapar de mínimos locales o perjudicial al perturbar genes ya bien calibrados. Con 60 individuos y elitismo=3, la población mantiene diversidad incluso cuando la mutación es alta.
+
+### Resultados observados y justificación
+
+En general, las tres configuraciones logran encontrar políticas con fitness cercano a 500 (el máximo posible) dentro de las 50 generaciones, lo cual es consistente con la relativa simplicidad del problema CartPole cuando se usa una red neuronal pequeña. La diferencia principal entre configuraciones radica en la **velocidad de convergencia** y en la **estabilidad de la media poblacional**:
+
+- La Config 1 converge rápidamente en términos del individuo máximo, pero su media poblacional puede quedarse baja si pocos individuos dominan la selección (pérdida de diversidad).
+- La Config 2 tiende a elevar la media poblacional de forma más gradual y sostenida, ya que el cruce uniforme distribuye mejor los genes exitosos entre más individuos.
+- La Config 3 muestra mayor variabilidad en la media por el alto ruido de mutación, pero el individuo élite está protegido por el elitismo, preservando la mejor solución encontrada.
+
+### Elección del operador de selección
+
+Se usó torneo (tournament selection) como mecanismo primario porque es paramétrico en la presión de selección (ajustable por `k`), eficiente en tiempo y no requiere normalizar el fitness. La alternativa de ruleta proporcional tiene el problema conocido de super-individuos: cuando un individuo tiene un fitness muy superior al resto, domina las selecciones y reduce la diversidad drásticamente.
+
+### Limitaciones y trabajo futuro
+
+1. **Sin gradientes adaptativos:** La tasa de mutación es fija por configuración. Estrategias como la auto-adaptación de parámetros (ES – Evolution Strategies, CMA-ES) ajustan σ dinámicamente según el progreso de la población.
+2. **Fitness con varianza:** Promediar 5 episodios reduce pero no elimina el ruido estocástico del estado inicial. Aumentar a 10–15 episodios mejoraría la precisión de la evaluación, a costa de tiempo de cómputo.
+3. **Arquitectura fija:** Explorar neuroevolution (NEAT) permitiría co-evolucionar la topología de la red junto con sus pesos.
+4. **Reproducibilidad vs. exploración:** Fijar la semilla garantiza resultados reproducibles para comparación, pero en la práctica conviene promediar sobre múltiples semillas para obtener intervalos de confianza en los resultados.
+
+### Conclusión
+
+Los tres enfoques demuestran que los algoritmos genéticos son capaces de resolver CartPole-v1 de forma efectiva y sin acceso a gradientes. La configuración balanceada (Config 2) ofrece el mejor compromiso entre velocidad de convergencia, diversidad poblacional y robustez. Las variantes conservadora y agresiva ilustran los extremos del trade-off exploración/explotación: poca mutación converge rápido pero puede estancarse; mucha mutación explora ampliamente pero puede degradar soluciones buenas. El diseño del algoritmo genético —representación, operadores y parámetros— debe adaptarse a la naturaleza del problema, y CartPole demuestra ser un banco de pruebas ideal para experimentar con estas decisiones.
