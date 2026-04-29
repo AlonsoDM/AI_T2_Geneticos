@@ -52,7 +52,7 @@ Arquitectura de la red neuronal:
     1 = empujar derecha
   ```
 
-- Se toma la acción con mayor valor (argmax), sin softmax, porque solo necesitamos la decisión, no una probabilidad.
+- Se toma la acción con mayor valor (argmax), sin softmax, porque solo se necesita la decisión, no una probabilidad.
 
 - Estructura del cromosoma (vector plano de reales):
   ```
